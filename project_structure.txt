@@ -1,0 +1,56 @@
+﻿Project structure for: C:\Users\stebe\PycharmProjects\lama_cleaner
+|-- backend
+|   |-- __pycache__
+|   |   |-- __init__.cpython-311.pyc
+|   |   |-- backend_crop.cpython-311.pyc
+|   |   |-- file_ops.cpython-311.pyc
+|   |   |-- image_loop.cpython-311.pyc
+|   |   |-- inpaint.cpython-311.pyc
+|   |   |-- lama_loader.cpython-311.pyc
+|   |   |-- ldm_loader.cpython-311.pyc
+|   |   |-- main.cpython-311.pyc
+|   |   |-- manifest.cpython-311.pyc
+|   |   |-- mat_loader.cpython-311.pyc
+|   |   \-- zits_loader.cpython-311.pyc
+|   |-- helpers
+|   |   \-- iccprofile.py
+|   |-- __init__.py
+|   |-- backend_crop.py
+|   |-- base64stringgen.py
+|   |-- file_ops.py
+|   |-- image_loop.py
+|   |-- inpaint.py
+|   |-- lama_loader.py
+|   |-- ldm_loader.py
+|   |-- main.py
+|   |-- manifest.py
+|   |-- mat_loader.py
+|   |-- project_tree.py
+|   |-- test_inpaint.ps1
+|   \-- zits_loader.py
+|-- config
+|   \-- config.json
+|-- data
+|   |-- edits
+|   \-- session_manifest.json
+|-- frontend
+|   |-- core
+|   |   |-- canvas.js
+|   |   |-- drawing.js
+|   |   |-- mask.js
+|   |   |-- undo.js
+|   |   \-- viewport.js
+|   |-- pipeline
+|   |   |-- cropping.js
+|   |   |-- inpainting.js
+|   |   \-- loader.js
+|   |-- ui
+|   |   |-- advancedSettings.js
+|   |   |-- buttons.js
+|   |   |-- cropProposalUI.js
+|   |   \-- shortcuts.js
+|   |-- app.js
+|   |-- index.html
+|   \-- style.css
+|-- project_structure.txt
+\-- run_backend.ps1

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Image Review Tool</title>
+    <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+
+<h1>Image Review Tool</h1>
+
+<!-- Progress Bar -->
+<div id="progressContainer">
+    <div id="progressBar"></div>
+</div>
+
+<div id="controls">
+    <label>Brush size:</label>
+    <input type="range" id="brushSize" min="5" max="200" value="20">
+
+    <!-- ⭐ MANUAL PATH ENTRY -->
+    <input type="text" id="folderPathInput" placeholder="Enter full folder path" style="width: 300px;">
+
+    <button id="nextBtn">Next Image</button>
+    <button id="doneBtn">Mark Done</button>
+    <button id="deleteBtn">Delete</button>
+
+    <div id="editIndicator" style="margin-left: 10px; font-weight: bold; color: #ccc;">
+        Edit: 0 / 0
+    </div>
+</div>
+
+<!-- ADVANCED SETTINGS BUTTON -->
+<button id="advBtn" class="toolbar-btn">Advanced Settings</button>
+<!-- ADVANCED SETTINGS PANEL -->
+<div id="advPanel" 
+     style="display:none; padding: 12px; border: 1px solid #444; background: #222; color: #eee;">
+
+    <h3 style="margin-top: 0;">Advanced Settings</h3>
+
+    <!-- MODEL SELECTION -->
+    <div style="margin-bottom: 14px;">
+        <strong>Model Selection</strong><br>
+        <div id="modelOptions"></div>
+    </div>
+
+    <!-- MODEL PARAMETERS -->
+    <div style="margin-bottom: 14px;">
+        <strong>Model Parameters</strong><br>
+
+        <label style="display:block; margin-top:6px;">
+            Steps:
+            <input type="number" id="stepsInput" value="20" min="1" max="100"
+                   style="width: 70px; margin-left: 6px;">
+        </label>
+
+        <label style="display:block; margin-top:6px;">
+            HD Strategy:
+            <select id="hdStrategySelect" style="margin-left: 6px;"></select>
+        </label>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div style="margin-top: 16px;">
+        <button id="saveModelBtn" style="margin-right: 10px;">Save Settings</button>
+        <button id="backBtn" style="margin-right: 10px;">Back</button>
+
+        <!-- ⭐ RESET SESSION BUTTON -->
+        <button id="resetSessionBtn" 
+                style="background:#922; color:#fff; margin-left: 0;">
+            Reset Session
+        </button>
+    </div>
+
+</div>
+
+<div id="imageContainer">
+    <canvas id="imageCanvas"></canvas>
+    <canvas id="maskCanvas"></canvas>
+</div>
+
+<input type="file" id="watermarkUpload">
+
+<script type="module" src="/frontend/app.js"></script>
+
+</body>
+</html>

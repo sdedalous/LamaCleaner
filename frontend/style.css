@@ -1,0 +1,109 @@
+/* -----------------------------------------
+   GLOBAL
+----------------------------------------- */
+
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f7f7f7;
+
+    /* allow vertical scrolling */
+    overflow-y: auto;
+
+    /* prevent horizontal scrollbars */
+    overflow-x: hidden;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+/* FIX: make toolbar wrap and stop pushing UI off-screen */
+#controls {
+    margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+#controls button {
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* -----------------------------------------
+   IMAGE EDITING AREA (FIXED VIEWPORT)
+----------------------------------------- */
+
+#imageContainer {
+    position: relative;
+    width: 800px;   /* fixed viewport */
+    height: 800px;
+    border: 1px solid #ccc;
+    background: white;
+
+    /* keep zoom/pan overflow hidden INSIDE the viewport */
+    overflow: hidden;
+
+    margin-top: 20px;
+}
+
+/* Both canvases stack perfectly and match viewport pixels */
+#imageCanvas,
+#maskCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;   /* 100% of 800x800 container */
+    height: 100%;
+
+    touch-action: none;
+    image-rendering: pixelated;
+}
+
+/* Mask canvas receives mouse events */
+#maskCanvas {
+    pointer-events: auto;
+    cursor: crosshair;
+}
+
+/* Image canvas ignores mouse events */
+#imageCanvas {
+    pointer-events: none;
+}
+
+/* -----------------------------------------
+   PROGRESS BAR
+----------------------------------------- */
+
+#progressContainer {
+    width: 800px;
+    height: 12px;
+    background: #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+#progressBar {
+    height: 100%;
+    width: 0%;
+    background: #4caf50;
+    transition: width 0.2s ease;
+}
+
+#advPanel {
+    margin-top: 12px;
+    border-radius: 6px;
+}
+
+.toolbar-btn {
+    margin: 4px;
+    padding: 6px 12px;
+}
+body {
+    overflow-y: scroll;
+}

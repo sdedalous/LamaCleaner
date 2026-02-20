@@ -1,0 +1,5 @@
+{
+  "model": "lama",
+  "steps": 20,
+  "hd_strategy": "CROP"
+}
