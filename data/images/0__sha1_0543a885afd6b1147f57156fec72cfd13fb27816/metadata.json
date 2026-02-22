@@ -1,13 +1,13 @@
 {
-    "image_id": "'Sappho' Portrait - Ancient Roman Fresco Painting Pompeii Poster__sha1_480735c18d0f7e80424c6e4703bc7a53b36a59c1",
-    "original_filename": "'Sappho' Portrait - Ancient Roman Fresco Painting Pompeii Poster.png",
+    "image_id": "0__sha1_0543a885afd6b1147f57156fec72cfd13fb27816",
+    "original_filename": "0.png",
     "raw_dimensions": {
-        "width": 750,
-        "height": 1000
+        "width": 1000,
+        "height": 1357
     },
     "normalized_dimensions": {
-        "width": 750,
-        "height": 1000
+        "width": 1000,
+        "height": 1357
     },
     "has_alpha": true,
     "normalization": {
@@ -23,7 +23,7 @@
         "destination": "main"
     },
     "timestamps": {
-        "normalized_at": "2026-02-20T06:09:12.843994",
+        "normalized_at": "2026-02-21T11:07:46.490457",
         "edit_completed_at": null,
         "routed_at": null
     }

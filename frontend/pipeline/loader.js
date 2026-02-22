@@ -58,6 +58,11 @@ export async function loadNextImage() {
 
     const res = await fetch(`${API}/next_image_v2`);
     const data = await res.json();
+    console.log("NEXT_IMAGE data:", data);
+    console.log("mask_url:", data.mask_url);
+    console.log("loadingSavedMask set to:", window.__loadingSavedMask);
+
+    window.__loadingSavedMask = !!data.mask_url;
 
     if (!data.url) {
         alert("No more images");
@@ -71,7 +76,8 @@ export async function loadNextImage() {
     await loadImageToCanvas(data.url);
     // 2.5️⃣ Load existing mask if present
     if (data.mask_url) {
-        loadSavedMaskForCurrentImage(`${API}${data.mask_url}`);
+         window.__loadingSavedMask = true;
+         loadSavedMaskForCurrentImage(`${API}${data.mask_url}`);
     }
 
 
@@ -86,7 +92,8 @@ export async function loadNextImage() {
     // 3️⃣ Fit viewport and draw once
     fitImageToViewport();
     if (!data.mask_url) {
-        draw(); // when there is a saved mask, loadSavedMaskForCurrentImage() will call draw()
+        console.log("loadNextImage → about to draw, mask_url =", data.mask_url);
+        draw(); // when there is a saved mask,  will calloadSavedMaskForCurrentImage()l draw()
     }
 
 
@@ -125,6 +132,8 @@ export function loadImageToCanvas(path) {
         const img = new Image();
 
         img.onload = () => {
+            console.log("loadImageToCanvas: loadingSavedMask =", window.__loadingSavedMask);
+
             // 1) Store image
             setImg(img);
             setImageBuffer(img);
@@ -140,8 +149,8 @@ export function loadImageToCanvas(path) {
                 bufCtx.fillStyle = "white";
                 bufCtx.fillRect(0, 0, buf.width, buf.height);
             }
-            // 4) First draw
-            draw();
+            // 4) First draw ONLY if no saved mask is coming
+            if (!window.__loadingSavedMask) { draw();}
             resolve();
         };
 
@@ -202,6 +211,8 @@ export function setCurrentHDStrategy(h) { currentHDStrategy = h; }
 // FUTURE: Saved mask loading stub
 // -------------------------------------------------------------
 export async function loadSavedMaskForCurrentImage(maskUrl) {
+    console.log("LOAD_SAVED_MASK: starting, url =", maskUrl);
+
     const img = new Image();
     img.onload = () => {
         const buf = getMaskBuffer();
@@ -209,9 +220,18 @@ export async function loadSavedMaskForCurrentImage(maskUrl) {
         const maskCanvas = getMaskCanvas();
         const maskCtx = getMaskCtx();
 
-        if (!buf || !bufCtx || !maskCanvas || !maskCtx) return;
+        console.log(
+            "LOAD_SAVED_MASK: img size =", img.width, img.height,
+            "| buf size =", buf?.width, buf?.height,
+            "| maskCanvas size =", maskCanvas?.width, maskCanvas?.height
+        );
 
-        // 1️⃣ Clear the view-space overlay (red tint)
+        if (!buf || !bufCtx || !maskCanvas || !maskCtx) {
+            console.log("LOAD_SAVED_MASK: missing buffer or canvas, aborting");
+            return;
+        }
+
+        // 1️⃣ Clear the view-space overlay
         maskCtx.setTransform(1, 0, 0, 1, 0, 0);
         maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
 
@@ -219,9 +239,35 @@ export async function loadSavedMaskForCurrentImage(maskUrl) {
         bufCtx.setTransform(1, 0, 0, 1, 0, 0);
         bufCtx.clearRect(0, 0, buf.width, buf.height);
         bufCtx.drawImage(img, 0, 0, buf.width, buf.height);
+        // Convert black-on-white mask into alpha mask: dark = opaque, light = transparent
+        const imageData = bufCtx.getImageData(0, 0, buf.width, buf.height);
+        const data = imageData.data;
 
-        // 3️⃣ Redraw everything (this regenerates the red overlay)
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const luminance = (r + g + b) / 3;
+
+            // Dark pixels → high alpha, light pixels → low alpha
+            const alpha = luminance;
+            data[i + 3] = alpha;
+        }
+
+        bufCtx.putImageData(imageData, 0, 0);
+
+        console.log("LOAD_SAVED_MASK: drew saved mask into buf");
+
+        // 3️⃣ NOW reset the flag
+        window.__loadingSavedMask = false;
+        console.log("LOAD_SAVED_MASK: loadingSavedMask set to false, calling draw()");
+
+        // 4️⃣ Redraw everything
         draw();
+    };
+
+    img.onerror = (e) => {
+        console.error("LOAD_SAVED_MASK: FAILED to load mask image", maskUrl, e);
     };
 
     img.src = maskUrl;

@@ -121,11 +121,27 @@ def update_config(req: UpdateConfigRequest):
 # IMAGE SERVING
 # =============================================================
 
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
+from urllib.parse import unquote
+from pathlib import Path
+
 @app.get("/image")
 def serve_image(path: str):
-    if path.startswith("file:///"):
-        path = path.replace("file:///", "")
-    return FileResponse(path)
+    # 1. URL-decode (%20 → space, %27 → ')
+    decoded = unquote(path)
+
+    # 2. Normalize Windows path separators
+    normalized = Path(decoded)
+
+    # 3. Validate existence
+    if not normalized.exists():
+        print("❌ FILE NOT FOUND:", normalized)
+        raise HTTPException(status_code=404, detail=f"File not found: {normalized}")
+
+    # 4. Serve the file
+    return FileResponse(normalized)
+
 
 # =============================================================
 # BASIC EDITING ENDPOINTS
