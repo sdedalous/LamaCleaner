@@ -1,51 +1,50 @@
 // =============================================================
-// REMBG PIPELINE
+// REMBG PIPELINE (CLEANED FOR BUNDLE ARCHITECTURE)
 // =============================================================
 
-import { API, getWorkingImage } from "./loader.js";
+import { API } from "./loader.js";
 import {
     saveMaskCheckpoint,
     restoreMaskCheckpoint,
 } from "../core/mask.js";
 import { requestRedraw } from "../pipeline/state.js";
 
+// -------------------------------------------------------------
+// Run REMBG on the CURRENT bundle
+// -------------------------------------------------------------
 export async function runRembg() {
-    const workingImage = getWorkingImage();
-    if (!workingImage) {
-        alert("No working image loaded.");
+    if (!window.currentBundleId) {
+        alert("No bundle loaded.");
         return;
     }
 
     // Save current mask so we can restore if rembg result is bad
     saveMaskCheckpoint();
 
-    const res = await fetch(`${API}/rembg`, {
+    const res = await fetch(`${API}/rembg_v2`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            bundle_id: window.currentBundleId,
-            image_base64: workingImage,
+            bundle_id: window.currentBundleId
         }),
     });
 
     const data = await res.json();
     console.log("Rembg result:", data);
 
-    if (data.ok && data.mask_base64) {
-        const img = new Image();
-        img.src = data.mask_base64;
-        img.onload = () => {
-            const canvas = document.getElementById("maskCanvas");
-            const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            requestRedraw();
-        };
-    } else {
+    if (!data.ok) {
         alert("Rembg failed: " + (data.error || "Unknown error"));
-        // Roll back to pre-rembg mask if we have one
         if (restoreMaskCheckpoint()) {
             requestRedraw();
         }
+        return;
     }
+
+    // Backend has already written:
+    //   bundle/<id>/rembg.png
+    //   bundle/<id>/mask.png
+    //
+    // So we simply reload the bundle via the unified loader.
+    const { reloadCurrentBundle } = await import("./loader.js");
+    await reloadCurrentBundle();
 }
