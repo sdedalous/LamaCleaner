@@ -7,3 +7,6 @@ export function markEdited() {
 export function resetEdits() {
     hasEdits = false;
 }
+export function requestRedraw() {
+    window.dispatchEvent(new Event("request-redraw"));
+}

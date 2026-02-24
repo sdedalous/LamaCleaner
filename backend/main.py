@@ -203,33 +203,6 @@ def discover_images(root):
 
     return sorted(results)
 
-@app.post("/reset_session")
-async def reset_session():
-    """
-    Reset the V2 session by clearing the manifest and temporary files.
-    """
-
-    import os
-    import shutil
-    from backend.manifest_v2 import MANIFEST_V2_PATH
-
-    # --- Remove manifest_v2.json ---
-    if os.path.exists(MANIFEST_V2_PATH):
-        os.remove(MANIFEST_V2_PATH)
-
-    # --- Clear edits folder ---
-    edits_dir = os.path.join("data", "edits")
-    if os.path.exists(edits_dir):
-        shutil.rmtree(edits_dir)
-    os.makedirs(edits_dir, exist_ok=True)
-
-    # --- Clear watermarked folder ---
-    watermarked_dir = os.path.join("data", "watermarked")
-    if os.path.exists(watermarked_dir):
-        shutil.rmtree(watermarked_dir)
-    os.makedirs(watermarked_dir, exist_ok=True)
-
-    return {"ok": True}
 
 @app.post("/init_session_v2")
 async def init_session_v2(req: InitRequest):
@@ -249,6 +222,48 @@ async def init_session_v2(req: InitRequest):
         "ok": True,
         "message": "V2 session initialized"
     }
+
+@app.get("/reload_bundle_v2")
+async def reload_bundle_v2(bundle_id: str):
+    """
+    Reload the CURRENT bundle without advancing the manifest index.
+
+    Returns:
+        - url: inpaint.png if it exists, else normalized.png
+        - mask_url: mask.png if it exists
+    """
+    bundle_dir = os.path.join("data/images", bundle_id)
+    normalized_path = os.path.join(bundle_dir, "normalized.png")
+    inpaint_path = os.path.join(bundle_dir, "inpaint.png")
+    mask_path = os.path.join(bundle_dir, "mask.png")
+
+    if not os.path.exists(normalized_path) and not os.path.exists(inpaint_path):
+        return {
+            "ok": False,
+            "error": f"No images found for bundle_id={bundle_id}",
+            "url": None,
+            "mask_url": None,
+            "bundle_id": bundle_id,
+        }
+
+    # Prefer inpaint.png if it exists
+    if os.path.exists(inpaint_path):
+        url = f"/image?path=data/images/{bundle_id}/inpaint.png"
+    else:
+        url = f"/image?path=data/images/{bundle_id}/normalized.png"
+
+    mask_url = None
+    if os.path.exists(mask_path):
+        mask_url = f"/image?path=data/images/{bundle_id}/mask.png"
+
+    return {
+        "ok": True,
+        "error": None,
+        "bundle_id": bundle_id,
+        "url": url,
+        "mask_url": mask_url,
+    }
+
 
 @app.get("/next_image_v2")
 async def next_image_v2():
@@ -285,7 +300,13 @@ async def next_image_v2():
     save_manifest_v2(manifest)
 
     # URL for normalized image
-    url = f"/image?path=data/images/{bundle_id}/normalized.png"
+    inpaint_path = os.path.join(bundle_dir, "inpaint.png")
+
+    if os.path.exists(inpaint_path):
+        url = f"/image?path=data/images/{bundle_id}/inpaint.png"
+    else:
+        url = f"/image?path=data/images/{bundle_id}/normalized.png"
+
 
     # ⭐ Load existing mask if present
     mask_path = os.path.join(bundle_dir, "mask.png")
@@ -342,6 +363,21 @@ async def inpaint_v2(request: InpaintRequest):
     print("🔥 DEBUG: run_inpaint_v2 returned ok =", result.get("ok"))
 
     return result
+
+# =============================================================
+# REMBG ENDPOINT
+# =============================================================
+from backend.rembg import run_rembg
+
+@app.post("/rembg")
+async def rembg_endpoint(payload: dict):
+    image_base64 = payload.get("image_base64")
+    bundle_id = payload.get("bundle_id")
+
+    if not image_base64:
+        return { "ok": False, "error": "Missing image_base64" }
+
+    return run_rembg(image_base64)
 
 
 # =============================================================

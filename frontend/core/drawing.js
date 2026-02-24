@@ -73,7 +73,7 @@ export function draw() {
     // Draw maskBuffer
     maskCtx.drawImage(maskBuffer, 0, 0);
 
-    // Tint masked area red
+    // Tint masked area red (original behavior)
     maskCtx.globalCompositeOperation = "source-in";
     maskCtx.fillStyle = "rgba(255, 0, 0, 0.4)";
     maskCtx.fillRect(0, 0, maskBuffer.width, maskBuffer.height);
@@ -102,3 +102,4 @@ export function fitImageToViewport() {
     ViewTransform.offsetX = (width - img.width * fitScale) / 2;
     ViewTransform.offsetY = (height - img.height * fitScale) / 2;
 }
+window.addEventListener("request-redraw", () => { draw(); });

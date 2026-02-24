@@ -1,7 +1,7 @@
 // =============================================================
 // INPAINT PIPELINE
 // =============================================================
-
+import { debugMaskAscii } from "../debug/debug.js";
 import {
     API,
     getCurrentSteps,
@@ -18,19 +18,12 @@ export function setupInpainting() {
 }
 
 // Run inpaint on the CURRENT working image, with the CURRENT mask.
+import { reloadCurrentBundle } from "./loader.js";
+
 export async function runInpaint() {
+    debugMaskAscii("BEFORE GETMASKBASE64", 50);
 
-    // ⭐ NEW LOGIC: Only send a mask if the user actually painted something
-    let maskBase64 = "";
-    if (hasUserDrawnMask()) {
-        maskBase64 = getMaskBase64() || "";
-    }
-
-    console.log("DEBUG runInpaint:",
-        "hasUserDrawnMask =", hasUserDrawnMask(),
-        "maskBase64 length =", maskBase64.length
-    );
-
+    const maskBase64 = getMaskBase64() || "";
     const workingImage = getWorkingImage();
 
     if (!workingImage) {
@@ -52,11 +45,14 @@ export async function runInpaint() {
     const data = await res.json();
     console.log("Inpaint result:", data);
 
-    if (data.ok && data.result_base64) {
-        setWorkingImage(data.result_base64);
-        await loadImageToCanvas(data.result_base64);
-        // Mask stays as-is; user can refine and inpaint again
-    } else {
+    if (!data.ok) {
         alert("Inpaint failed: " + data.error);
+        return;
     }
+
+    // ⭐ Do NOT use data.result_base64 anymore.
+    // ⭐ Backend has already written inpaint.png + mask.png into the bundle.
+    // ⭐ Just reload the current bundle via the same pipeline as initial load.
+    await reloadCurrentBundle();
 }
+

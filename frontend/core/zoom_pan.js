@@ -4,7 +4,8 @@
 
 import { getMaskCanvas, getImageCanvas } from "./canvas.js";
 import { zoomAt, panBy, fullscreenTest } from "./viewport.js";
-import { draw } from "./drawing.js";
+import { requestRedraw } from "../pipeline/state.js";
+
 
 export function setupZoomPan() {
     const maskCanvas = getMaskCanvas();
@@ -18,7 +19,7 @@ export function setupZoomPan() {
 
         const factor = deltaY < 0 ? 1.1 : 1 / 1.1;
         zoomAt(centerX, centerY, factor);
-        draw();
+        requestRedraw();
     }
 
     // Wheel on maskCanvas
@@ -56,7 +57,7 @@ export function setupZoomPan() {
             panBy(dx, dy);
             lastX = e.clientX;
             lastY = e.clientY;
-            draw();
+            requestRedraw();
         }
     });
 

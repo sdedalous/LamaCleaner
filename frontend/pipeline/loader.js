@@ -1,7 +1,10 @@
 // =============================================================
 // IMAGE LOADING + SESSION MANAGEMENT
 // =============================================================
-
+import { debugViewport } from "../debug/debug.js";
+import { debugMaskAscii } from "../debug/debug.js";
+import { debugMaskBufferSample } from "../debug/debug.js";
+import { requestRedraw } from "../pipeline/state.js";
 import {
     setImg,
     setImageBuffer,
@@ -53,6 +56,45 @@ export async function startSessionFromPath(folderPath) {
     await loadNextImage();
 }
 
+export async function reloadCurrentBundle() {
+    if (!window.currentBundleId) {
+        console.error("reloadCurrentBundle: no currentBundleId set");
+        return;
+    }
+
+    const res = await fetch(`${API}/reload_bundle_v2?bundle_id=${encodeURIComponent(window.currentBundleId)}`);
+    const data = await res.json();
+
+    console.log("RELOAD_BUNDLE_V2 data:", data);
+
+    if (!data.ok) {
+        alert("Failed to reload bundle: " + data.error);
+        return;
+    }
+
+    const url = data.url;
+    const mask_url = data.mask_url;
+
+    if (!url) {
+        console.error("reloadCurrentBundle: no url returned");
+        return;
+    }
+
+    // Load image
+    await loadImageToCanvas(url);
+
+    // Load mask if present
+    if (mask_url) {
+        console.log("reloadCurrentBundle: loading saved mask:", mask_url);
+        window.__loadingSavedMask = true;
+        loadSavedMaskForCurrentImage(`${API}${mask_url}`);
+    }
+
+    fitImageToViewport();
+    draw();
+}
+
+
 export async function loadNextImage() {
     console.log("loadNextImage CALLED");
 
@@ -74,6 +116,7 @@ export async function loadNextImage() {
 
     // 1️⃣ Load image (creates maskBuffer with correct size)
     await loadImageToCanvas(data.url);
+    debugViewport("AFTER INPAINT LOAD");
     // 2.5️⃣ Load existing mask if present
     if (data.mask_url) {
          window.__loadingSavedMask = true;
@@ -91,6 +134,7 @@ export async function loadNextImage() {
 
     // 3️⃣ Fit viewport and draw once
     fitImageToViewport();
+    debugViewport("AFTER INITIAL LOAD");
     if (!data.mask_url) {
         console.log("loadNextImage → about to draw, mask_url =", data.mask_url);
         draw(); // when there is a saved mask,  will calloadSavedMaskForCurrentImage()l draw()
@@ -138,19 +182,42 @@ export function loadImageToCanvas(path) {
             setImg(img);
             setImageBuffer(img);
 
+            // Convert loaded image to base64 for inpaint/rembg
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            tempCanvas.getContext("2d").drawImage(img, 0, 0);
+            setWorkingImage(tempCanvas.toDataURL("image/png"));
+            console.log("Working image base64 length:", getWorkingImage()?.length);
+
             // 2) Create IMAGE-SPACE mask buffer matching normalized image size
+            // BUT DO NOT FILL IT ANYMORE — we preserve the existing mask
+            const oldMask = getMaskBuffer();
+            const oldMaskCtx = getMaskBufferCtx();
+
             setMaskBufferSize(img.width, img.height);
 
-            // 3) Initialize mask buffer as FULL mask ONLY if no saved mask will be loaded
             const buf = getMaskBuffer();
             const bufCtx = getMaskBufferCtx();
-            if (buf && bufCtx && !window.__loadingSavedMask) {
+
+            // If we had a previous mask (inpaint cycle), copy it forward
+            if (oldMask && oldMaskCtx && buf && bufCtx && window.__loadingSavedMask === false) {
+                bufCtx.drawImage(oldMask, 0, 0, buf.width, buf.height);
+            }
+
+            // 3) Only auto-fill white if this is a brand new image with no saved mask
+            const isBase64 = typeof path === "string" && path.startsWith("data:image/");
+            if (buf && bufCtx && !window.__loadingSavedMask && !isBase64 && !oldMask) {
                 bufCtx.setTransform(1, 0, 0, 1, 0, 0);
                 bufCtx.fillStyle = "white";
                 bufCtx.fillRect(0, 0, buf.width, buf.height);
             }
+
             // 4) First draw ONLY if no saved mask is coming
-            if (!window.__loadingSavedMask) { draw();}
+            if (!window.__loadingSavedMask) {
+                requestRedraw();
+            }
+
             resolve();
         };
 
@@ -161,7 +228,7 @@ export function loadImageToCanvas(path) {
 
         // Correct handling of base64 images
         if (url.startsWith("data:image/")) {
-            img.src = url;   // <-- load base64 directly
+            img.src = url;
         }
         else if (url.startsWith("/image?path=")) {
             img.src = `${API}${url}`;
@@ -174,6 +241,7 @@ export function loadImageToCanvas(path) {
         }
     });
 }
+
 
 
 // -------------------------------------------------------------
@@ -239,6 +307,8 @@ export async function loadSavedMaskForCurrentImage(maskUrl) {
         bufCtx.setTransform(1, 0, 0, 1, 0, 0);
         bufCtx.clearRect(0, 0, buf.width, buf.height);
         bufCtx.drawImage(img, 0, 0, buf.width, buf.height);
+        debugMaskAscii("AFTER LOADING SAVED MASK (before alpha conversion)", 50);
+        debugMaskBufferSample("AFTER LOADING SAVED MASK (before alpha conversion)");
         // Convert black-on-white mask into alpha mask: dark = opaque, light = transparent
         const imageData = bufCtx.getImageData(0, 0, buf.width, buf.height);
         const data = imageData.data;
@@ -255,7 +325,8 @@ export async function loadSavedMaskForCurrentImage(maskUrl) {
         }
 
         bufCtx.putImageData(imageData, 0, 0);
-
+        debugMaskAscii("AFTER ALPHA CONVERSION", 50);
+        debugMaskBufferSample("AFTER ALPHA CONVERSION");
         console.log("LOAD_SAVED_MASK: drew saved mask into buf");
 
         // 3️⃣ NOW reset the flag

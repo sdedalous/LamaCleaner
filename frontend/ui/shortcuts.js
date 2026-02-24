@@ -1,13 +1,23 @@
 // =============================================================
-// KEYBOARD SHORTCUTS
+// KEYBOARD SHORTCUTS (STUB)
 // =============================================================
+//
+// This file intentionally contains no active shortcut bindings.
+// The previous shortcut system forwarded keys directly to DOM
+// buttons, which no longer fits the edition-based architecture.
+//
+// When we return to implement proper shortcuts, they should:
+//
+//   • Map keys to ACTIONS, not DOM elements
+//   • Integrate with the edition stack (undo/redo)
+//   • Support mask tools (brush, eraser, brush size)
+//   • Support viewport controls (zoom, pan, reset view)
+//   • Support inpainting triggers
+//   • Avoid triggering UI side-effects directly
+//
+// For now, this stub keeps the module valid and loadable.
+//
 
 export function setupShortcuts() {
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "d") document.getElementById("doneBtn")?.click();
-        if (e.key === "x") document.getElementById("deleteBtn")?.click();
-        if (e.key === "n") document.getElementById("nextBtn")?.click();
-        if (e.key === "z") document.getElementById("undoBtn")?.click();
-        if (e.key === "y") document.getElementById("redoBtn")?.click();
-    });
+    // No-op placeholder.
 }

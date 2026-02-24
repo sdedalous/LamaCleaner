@@ -1,7 +1,7 @@
 // =============================================================
 // MASK LAYER: BRUSH + ERASER + EXPORT (IMAGE-SPACE BUFFER)
 // =============================================================
-
+import { requestRedraw } from "../pipeline/state.js";
 import { screenToImage, ViewTransform } from "./viewport.js";
 import {
     getMaskCanvas,
@@ -28,7 +28,6 @@ export function setupMask() {
     const brushSlider = document.getElementById("brushSize");
     const maskBtn = document.getElementById("toolMask");
     const eraseBtn = document.getElementById("toolErase");
-    const clearBtn = document.getElementById("clearMask");
 
     // Brush size
     if (brushSlider) {
@@ -55,17 +54,6 @@ export function setupMask() {
         });
     }
 
-    // Clear mask (reset to full red overlay = empty inpaint area)
-    if (clearBtn) {
-        clearBtn.addEventListener("click", () => {
-            const buf = getMaskBuffer();
-            const ctx = getMaskBufferCtx();
-            if (!buf || !ctx) return;
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.clearRect(0, 0, buf.width, buf.height);
-            draw();
-        });
-    }
 
     // Drawing events
     maskCanvas.addEventListener("mousedown", (e) => {
@@ -133,7 +121,8 @@ function drawBrush(e) {
     lastBrushX = x;
     lastBrushY = y;
 
-    draw();
+    requestRedraw();
+
 }
 
 
@@ -174,7 +163,37 @@ export function setMaskFromBase64(base64Str) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, buf.width, buf.height);
         ctx.drawImage(img, 0, 0, buf.width, buf.height);
-        draw();
+        requestRedraw();
     };
     img.src = "data:image/png;base64," + base64Str;
+}
+
+// =============================================================
+// MASK CHECKPOINT (for rembg)
+// =============================================================
+
+let maskCheckpoint = null;
+
+export function saveMaskCheckpoint() {
+    const canvas = document.getElementById("maskCanvas");
+    const clone = document.createElement("canvas");
+    clone.width = canvas.width;
+    clone.height = canvas.height;
+    clone.getContext("2d").drawImage(canvas, 0, 0);
+    maskCheckpoint = clone;
+}
+
+export function restoreMaskCheckpoint() {
+    if (!maskCheckpoint) return false;
+
+    const canvas = document.getElementById("maskCanvas");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(maskCheckpoint, 0, 0);
+
+    return true;
+}
+
+export function clearMaskCheckpoint() {
+    maskCheckpoint = null;
 }

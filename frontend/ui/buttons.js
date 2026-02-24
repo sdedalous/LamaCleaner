@@ -1,6 +1,9 @@
 // =============================================================
 // UI BUTTONS
 // =============================================================
+import { runRembg } from "../pipeline/rembg.js";
+import { restoreMaskCheckpoint } from "../core/mask.js";
+import { requestRedraw } from "../pipeline/state.js";
 import { hasEdits, resetEdits } from "../pipeline/state.js";
 import { savePass, finalizeImage, skipImage, reloadBaseImage } from "../pipeline/save.js";
 import { loadNextImage, startSessionFromPath, API } from "../pipeline/loader.js";
@@ -100,6 +103,29 @@ export function setupButtons() {
     controls.appendChild(inpaintBtn);
 
     // ---------------------------------------------------------
+    // REMBG
+    // ---------------------------------------------------------
+    const rembgBtn = document.createElement("button");
+    rembgBtn.textContent = "Rembg";
+    rembgBtn.id = "rembgBtn";
+    rembgBtn.onclick = () => runRembg();
+    controls.appendChild(rembgBtn);
+
+    // ---------------------------------------------------------
+    // RESTORE MASK (after rembg)
+    // ---------------------------------------------------------
+    const restoreMaskBtn = document.createElement("button");
+    restoreMaskBtn.textContent = "Restore Mask";
+    restoreMaskBtn.id = "restoreMaskBtn";
+    restoreMaskBtn.onclick = () => {
+        if (restoreMaskCheckpoint()) {
+            requestRedraw();
+        }
+    };
+    controls.appendChild(restoreMaskBtn);
+
+
+    // ---------------------------------------------------------
     // WATERMARK UPLOAD
     // ---------------------------------------------------------
     document.getElementById("watermarkUpload").onchange = async (e) => {
@@ -117,29 +143,5 @@ export function setupButtons() {
         await loadNextImage();
     };
 
-    // ---------------------------------------------------------
-    // RESET SESSION
-    // ---------------------------------------------------------
-    const resetBtn = document.getElementById("resetSessionBtn");
-    if (resetBtn) {
-        resetBtn.onclick = async () => {
-            const ok = confirm("This will clear the session and all temporary edits. Continue?");
-            if (!ok) return;
 
-            await fetch(`${API}/reset_session`, { method: "POST" });
-
-            window.currentBundleId = null;
-
-            // Clear visible mask on reset
-            const maskCanvas = getMaskCanvas();
-            const maskCtx = maskCanvas.getContext("2d");
-            maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-            draw();
-
-            const bar = document.getElementById("progressBar");
-            if (bar) bar.style.width = "0%";
-
-            alert("Session reset. Enter a new folder path to begin.");
-        };
-    }
 }
